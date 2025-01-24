@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Activity Log</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .activity-card {
+            transition: all 0.3s ease;
+        }
+
+        .activity-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-completed {
+            background-color: rgba(40, 167, 69, 0.1);
+            border-left: 4px solid #28a745;
+        }
+
+        .status-progress {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+        }
+
+        .status-pending {
+            background-color: rgba(220, 53, 69, 0.1);
+            border-left: 4px solid #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const ActivityLogApp = () => {
+            const [activities, setActivities] = useState(() => {
+                const savedActivities = localStorage.getItem('activities');
+                return savedActivities ? JSON.parse(savedActivities) : [];
+            });
+
+            const [newActivity, setNewActivity] = useState({
+                time: '',
+                date: '',
+                description: '',
+                duration: '',
+                status: 'Completed',
+                notes: ''
+            });
+
+            const [filterDate, setFilterDate] = useState('');
+            const [editingActivity, setEditingActivity] = useState(null);
+
+            useEffect(() => {
+                localStorage.setItem('activities', JSON.stringify(activities));
+            }, [activities]);
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setNewActivity(prev => ({
+                    ...prev,
+                    [name]: value
+                }));
+            };
+
+            const addActivity = (e) => {
+                e.preventDefault();
+                const activityToAdd = {
+                    ...newActivity,
+                    id: editingActivity ? editingActivity.id : Date.now().toString(),
+                    date: newActivity.date || new Date().toISOString()
+                };
+
+                if (editingActivity) {
+                    setActivities(activities.map(act =>
+                        act.id === editingActivity.id ? activityToAdd : act
+                    ));
+                    setEditingActivity(null);
+                } else {
+                    setActivities([activityToAdd, ...activities]);
+                }
+
+                setNewActivity({
+                    time: '',
+                    date: '',
+                    description: '',
+                    duration: '',
+                    status: 'Completed',
+                    notes: ''
+                });
+            };
+
+            const deleteActivity = (id) => {
+                setActivities(activities.filter(activity => activity.id !== id));
+            };
+
+            const startEditActivity = (activity) => {
+                setEditingActivity(activity);
+                setNewActivity({
+                    time: activity.time,
+                    date: activity.date,
+                    description: activity.description,
+                    duration: activity.duration,
+                    status: activity.status,
+                    notes: activity.notes
+                });
+            };
+
+            const getStatusClass = (status) => {
+                switch (status) {
+                    case 'Completed': return 'status-completed';
+                    case 'In Progress': return 'status-progress';
+                    case 'Pending': return 'status-pending';
+                    default: return '';
+                }
+            };
+
+            const filteredActivities = useMemo(() => {
+                return activities.filter(activity => {
+                    if (!filterDate) return true;
+                    const activityDate = new Date(activity.date);
+                    const selectedDate = new Date(filterDate);
+                    return activityDate.toDateString() === selectedDate.toDateString();
+                });
+            }, [activities, filterDate]);
+
+            const downloadPDF = () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.setFontSize(12);
+                doc.text("Daily Activity Log", 10, 10);
+
+                let y = 20;
+                filteredActivities.forEach(activity => {
+                    doc.text(`${activity.time} - ${activity.description}`, 10, y);
+                    doc.text(`Date: ${new Date(activity.date).toLocaleDateString()} | Duration: ${activity.duration || 'N/A'} | Status: ${activity.status}`, 10, y + 5);
+                    y += 15;
+                });
+
+                doc.save('activity_log.pdf');
+            };
+
+            return (
+                <div className="container-fluid py-4">
+                    <div className="row">
+                        <div className="col-md-4">
+                            <div className="card mb-4">
+                                <div className="card-header bg-primary text-white">
+                                    <h3 className="mb-0">{editingActivity ? 'Edit Activity' : 'Add New Activity'}</h3>
+                                </div>
+                                <div className="card-body">
+                                    <form onSubmit={addActivity}>
+                                        <div className="mb-3">
+                                            <label className="form-label">Time</label>
+                                            <input type="time" className="form-control" name="time" value={newActivity.time} onChange={handleInputChange} required />
+                                        </div>
+                                        <div className="mb-3">
+                                            <label className="form-label">Date</label>
+                                            <input type="date" className="form-control" name="date" value={newActivity.date} onChange={handleInputChange} required />
+                                        </div>
+                                        <div className="mb-3">
+                                            <label className="form-label">Activity Description</label>
+                                            <input type="text" className="form-control" name="description" value={newActivity.description} onChange={handleInputChange} required />
+                                        </div>
+                                        <div className="mb-3">
+                                            <label className="form-label">Duration</label>
+                                            <input type="text" className="form-control" name="duration" value={newActivity.duration} onChange={handleInputChange} placeholder="e.g., 30 mins" />
+                                        </div>
+                                        <div className="mb-3">
+                                            <label className="form-label">Status</label>
+                                            <select className="form-select" name="status" value={newActivity.status} onChange={handleInputChange}>
+                                                <option>Completed</option>
+                                                <option>In Progress</option>
+                                                <option>Pending</option>
+                                            </select>
+                                        </div>
+                                        <div className="mb-3">
+                                            <label className="form-label">Notes</label>
+                                            <textarea className="form-control" name="notes" value={newActivity.notes} onChange={handleInputChange} rows="3" />
+                                        </div>
+                                        <button type="submit" className="btn btn-primary w-100">
+                                            <i className={`bi ${editingActivity ? 'bi-pencil' : 'bi-plus-circle'} me-2`}></i>
+                                            {editingActivity ? 'Update Activity' : 'Add Activity'}
+                                        </button>
+                                        {editingActivity && (
+                                            <button type="button" className="btn btn-secondary w-100 mt-2" onClick={() => {
+                                                setEditingActivity(null);
+                                                setNewActivity({
+                                                    time: '',
+                                                    date: '',
+                                                    description: '',
+                                                    duration: '',
+                                                    status: 'Completed',
+                                                    notes: ''
+                                                });
+                                            }}>
+                                                Cancel Edit
+                                            </button>
+                                        )}
+                                    </form>
+                                </div>
+                            </div>
+                            <div className="card">
+                                <div className="card-header bg-info text-white">
+                                    <h3 className="mb-0">Filter Activities</h3>
+                                </div>
+                                <div className="card-body">
+                                    <div className="mb-3">
+                                        <label className="form-label">Filter by Date</label>
+                                        <input type="date" className="form-control" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+                                    </div>
+                                    {filterDate && (
+                                        <button className="btn btn-outline-secondary w-100" onClick={() => setFilterDate('')}>
+                                            Clear Filter
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            <button className="btn btn-success w-100 mt-3" onClick={downloadPDF}>
+                                <i className="bi bi-file-earmark-pdf me-2"></i>
+                                Download PDF
+                            </button>
+                        </div>
+                        <div className="col-md-8">
+                            <div className="card">
+                                <div className="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                                    <h3 className="mb-0">{filterDate ? `Activities on ${new Date(filterDate).toLocaleDateString()}` : 'Activity Log'}</h3>
+                                    <span className="badge bg-light text-dark">Total Activities: {filteredActivities.length}</span>
+                                </div>
+                                <div className="card-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                    {filteredActivities.length === 0 ? (
+                                        <div className="alert alert-info text-center">
+                                            {filterDate ? 'No activities for selected date' : 'No activities logged yet'}
+                                        </div>
+                                    ) : (
+                                        filteredActivities.map(activity => (
+                                            <div key={activity.id} className={`card mb-3 activity-card ${getStatusClass(activity.status)}`}>
+                                                <div className="card-body d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h5 className="card-title">
+                                                            <i className="bi bi-clock me-2"></i>
+                                                            {activity.time} - {activity.description}
+                                                        </h5>
+                                                        <p className="card-text">
+                                                            <small className="text-muted">
+                                                                Date: {new Date(activity.date).toLocaleDateString()} |
+                                                                Duration: {activity.duration || 'N/A'} |
+                                                                Status: {activity.status}
+                                                            </small>
+                                                        </p>
+                                                        {activity.notes && (
+                                                            <p className="card-text mt-2">
+                                                                <i className="bi bi-sticky me-2"></i>
+                                                                {activity.notes}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="btn-group">
+                                                        <button className="btn btn-warning btn-sm" onClick={() => startEditActivity(activity)}>
+                                                            <i className="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button className="btn btn-danger btn-sm" onClick={() => deleteActivity(activity.id)}>
+                                                            <i className="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<ActivityLogApp />, document.getElementById('root'));
+    </script>
+</body>
+
+</html>
