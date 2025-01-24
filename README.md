@@ -65,10 +65,6 @@ You can customize the application by modifying the following files:
 - **style**: Modify the CSS styles in the `<style>` section for different looks.
 - **JavaScript Logic**: Customize the React components and functionality as needed.
 
-## License
-
-This project is open-source and available under the [MIT License](LICENSE).
-
 ## Acknowledgements
 
 - [React](https://reactjs.org/)
