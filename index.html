@@ -3,295 +3,497 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Daily Activity Log</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Logger</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f4f6f9;
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         .activity-card {
             transition: all 0.3s ease;
+            border-radius: 8px;
+            margin-bottom: 1rem;
         }
 
         .activity-card:hover {
-            transform: scale(1.02);
+            transform: translateY(-2px);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .status-completed {
-            background-color: rgba(40, 167, 69, 0.1);
-            border-left: 4px solid #28a745;
+            border-left: 4px solid #198754;
         }
 
         .status-progress {
-            background-color: rgba(255, 193, 7, 0.1);
             border-left: 4px solid #ffc107;
         }
 
         .status-pending {
-            background-color: rgba(220, 53, 69, 0.1);
             border-left: 4px solid #dc3545;
+        }
+
+        /* Modal Styles */
+        .modal-dialog-centered {
+            display: flex;
+            align-items: center;
+            min-height: calc(100% - 1rem);
+        }
+
+        .evening-planner-modal {
+            max-width: 500px;
+            margin: 1.75rem auto;
+        }
+
+        .evening-planner-modal .modal-content {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .evening-planner-modal .modal-header {
+            border-bottom: 1px solid #e9ecef;
+            padding: 1.5rem;
+        }
+
+        .evening-planner-modal .modal-body {
+            padding: 1.5rem;
+        }
+
+        .evening-planner-modal .form-label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+
+        .evening-planner-modal textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .evening-planner-modal .modal-footer {
+            border-top: 1px solid #e9ecef;
+            padding: 1rem 1.5rem;
+        }
+
+        /* Reflection Card Styles */
+        .reflection-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1rem;
+            padding: 1.5rem;
+        }
+
+        .reflection-card h5 {
+            color: #212529;
+            margin-bottom: 1rem;
+        }
+
+        .reflection-card p {
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            border-radius: 6px;
+        }
+
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
         }
     </style>
 </head>
 
 <body>
-    <div id="root"></div>
-
-    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-
-        const ActivityLogApp = () => {
-            const [activities, setActivities] = useState(() => {
-                const savedActivities = localStorage.getItem('activities');
-                return savedActivities ? JSON.parse(savedActivities) : [];
-            });
-
-            const [newActivity, setNewActivity] = useState({
-                time: '',
-                date: '',
-                description: '',
-                duration: '',
-                status: 'Completed',
-                notes: ''
-            });
-
-            const [filterDate, setFilterDate] = useState('');
-            const [editingActivity, setEditingActivity] = useState(null);
-
-            useEffect(() => {
-                localStorage.setItem('activities', JSON.stringify(activities));
-            }, [activities]);
-
-            const handleInputChange = (e) => {
-                const { name, value } = e.target;
-                setNewActivity(prev => ({
-                    ...prev,
-                    [name]: value
-                }));
-            };
-
-            const addActivity = (e) => {
-                e.preventDefault();
-                const activityToAdd = {
-                    ...newActivity,
-                    id: editingActivity ? editingActivity.id : Date.now().toString(),
-                    date: newActivity.date || new Date().toISOString()
-                };
-
-                if (editingActivity) {
-                    setActivities(activities.map(act =>
-                        act.id === editingActivity.id ? activityToAdd : act
-                    ));
-                    setEditingActivity(null);
-                } else {
-                    setActivities([activityToAdd, ...activities]);
-                }
-
-                setNewActivity({
-                    time: '',
-                    date: '',
-                    description: '',
-                    duration: '',
-                    status: 'Completed',
-                    notes: ''
-                });
-            };
-
-            const deleteActivity = (id) => {
-                setActivities(activities.filter(activity => activity.id !== id));
-            };
-
-            const startEditActivity = (activity) => {
-                setEditingActivity(activity);
-                setNewActivity({
-                    time: activity.time,
-                    date: activity.date,
-                    description: activity.description,
-                    duration: activity.duration,
-                    status: activity.status,
-                    notes: activity.notes
-                });
-            };
-
-            const getStatusClass = (status) => {
-                switch (status) {
-                    case 'Completed': return 'status-completed';
-                    case 'In Progress': return 'status-progress';
-                    case 'Pending': return 'status-pending';
-                    default: return '';
-                }
-            };
-
-            const filteredActivities = useMemo(() => {
-                return activities.filter(activity => {
-                    if (!filterDate) return true;
-                    const activityDate = new Date(activity.date);
-                    const selectedDate = new Date(filterDate);
-                    return activityDate.toDateString() === selectedDate.toDateString();
-                });
-            }, [activities, filterDate]);
-
-            const downloadPDF = () => {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                doc.setFontSize(12);
-                doc.text("Daily Activity Log", 10, 10);
-
-                let y = 20;
-                filteredActivities.forEach(activity => {
-                    doc.text(`${activity.time} - ${activity.description}`, 10, y);
-                    doc.text(`Date: ${new Date(activity.date).toLocaleDateString()} | Duration: ${activity.duration || 'N/A'} | Status: ${activity.status}`, 10, y + 5);
-                    y += 15;
-                });
-
-                doc.save('activity_log.pdf');
-            };
-
-            return (
-                <div className="container-fluid py-4">
-                    <div className="row">
-                        <div className="col-md-4">
-                            <div className="card mb-4">
-                                <div className="card-header bg-primary text-white">
-                                    <h3 className="mb-0">{editingActivity ? 'Edit Activity' : 'Add New Activity'}</h3>
-                                </div>
-                                <div className="card-body">
-                                    <form onSubmit={addActivity}>
-                                        <div className="mb-3">
-                                            <label className="form-label">Time</label>
-                                            <input type="time" className="form-control" name="time" value={newActivity.time} onChange={handleInputChange} required />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Date</label>
-                                            <input type="date" className="form-control" name="date" value={newActivity.date} onChange={handleInputChange} required />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Activity Description</label>
-                                            <input type="text" className="form-control" name="description" value={newActivity.description} onChange={handleInputChange} required />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Duration</label>
-                                            <input type="text" className="form-control" name="duration" value={newActivity.duration} onChange={handleInputChange} placeholder="e.g., 30 mins" />
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Status</label>
-                                            <select className="form-select" name="status" value={newActivity.status} onChange={handleInputChange}>
-                                                <option>Completed</option>
-                                                <option>In Progress</option>
-                                                <option>Pending</option>
-                                            </select>
-                                        </div>
-                                        <div className="mb-3">
-                                            <label className="form-label">Notes</label>
-                                            <textarea className="form-control" name="notes" value={newActivity.notes} onChange={handleInputChange} rows="3" />
-                                        </div>
-                                        <button type="submit" className="btn btn-primary w-100">
-                                            <i className={`bi ${editingActivity ? 'bi-pencil' : 'bi-plus-circle'} me-2`}></i>
-                                            {editingActivity ? 'Update Activity' : 'Add Activity'}
-                                        </button>
-                                        {editingActivity && (
-                                            <button type="button" className="btn btn-secondary w-100 mt-2" onClick={() => {
-                                                setEditingActivity(null);
-                                                setNewActivity({
-                                                    time: '',
-                                                    date: '',
-                                                    description: '',
-                                                    duration: '',
-                                                    status: 'Completed',
-                                                    notes: ''
-                                                });
-                                            }}>
-                                                Cancel Edit
-                                            </button>
-                                        )}
-                                    </form>
-                                </div>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <!-- Activity Form Column -->
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0" id="formTitle">Add New Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="activityForm">
+                            <div class="mb-3">
+                                <label class="form-label">Time</label>
+                                <input type="time" class="form-control" name="time" required>
                             </div>
-                            <div className="card">
-                                <div className="card-header bg-info text-white">
-                                    <h3 className="mb-0">Filter Activities</h3>
-                                </div>
-                                <div className="card-body">
-                                    <div className="mb-3">
-                                        <label className="form-label">Filter by Date</label>
-                                        <input type="date" className="form-control" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
-                                    </div>
-                                    {filterDate && (
-                                        <button className="btn btn-outline-secondary w-100" onClick={() => setFilterDate('')}>
-                                            Clear Filter
-                                        </button>
-                                    )}
-                                </div>
+                            <div class="mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control" name="date" required>
                             </div>
-                            <button className="btn btn-success w-100 mt-3" onClick={downloadPDF}>
-                                <i className="bi bi-file-earmark-pdf me-2"></i>
-                                Download PDF
+                            <div class="mb-3">
+                                <label class="form-label">Activity Description</label>
+                                <input type="text" class="form-control" name="description" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Duration</label>
+                                <input type="text" class="form-control" name="duration" placeholder="e.g., 30 mins">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" name="status">
+                                    <option value="Completed">Completed</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Pending">Pending</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control" name="notes" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                <span id="submitButtonText">Add Activity</span>
                             </button>
-                        </div>
-                        <div className="col-md-8">
-                            <div className="card">
-                                <div className="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                                    <h3 className="mb-0">{filterDate ? `Activities on ${new Date(filterDate).toLocaleDateString()}` : 'Activity Log'}</h3>
-                                    <span className="badge bg-light text-dark">Total Activities: {filteredActivities.length}</span>
-                                </div>
-                                <div className="card-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-                                    {filteredActivities.length === 0 ? (
-                                        <div className="alert alert-info text-center">
-                                            {filterDate ? 'No activities for selected date' : 'No activities logged yet'}
-                                        </div>
-                                    ) : (
-                                        filteredActivities.map(activity => (
-                                            <div key={activity.id} className={`card mb-3 activity-card ${getStatusClass(activity.status)}`}>
-                                                <div className="card-body d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <h5 className="card-title">
-                                                            <i className="bi bi-clock me-2"></i>
-                                                            {activity.time} - {activity.description}
-                                                        </h5>
-                                                        <p className="card-text">
-                                                            <small className="text-muted">
-                                                                Date: {new Date(activity.date).toLocaleDateString()} |
-                                                                Duration: {activity.duration || 'N/A'} |
-                                                                Status: {activity.status}
-                                                            </small>
-                                                        </p>
-                                                        {activity.notes && (
-                                                            <p className="card-text mt-2">
-                                                                <i className="bi bi-sticky me-2"></i>
-                                                                {activity.notes}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    <div className="btn-group">
-                                                        <button className="btn btn-warning btn-sm" onClick={() => startEditActivity(activity)}>
-                                                            <i className="bi bi-pencil"></i>
-                                                        </button>
-                                                        <button className="btn btn-danger btn-sm" onClick={() => deleteActivity(activity.id)}>
-                                                            <i className="bi bi-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity List Column -->
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0" id="activityLogTitle">Activity Log</h5>
+                        <span class="badge bg-primary" id="totalActivities">Total Activities: 0</span>
+                    </div>
+                    <div class="card-body" style="max-height: 70vh; overflow-y: auto;">
+                        <div id="activityList" class="activity-list"></div>
+                    </div>
+                    <div class="card-footer bg-white d-flex align-items-center justify-content-between">
+                        <input type="date" class="form-control w-auto" id="filterDate">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-dark" id="downloadPDF">
+                                <i class="bi bi-download"></i> Download PDF
+                            </button>
+                            <button class="btn btn-success" id="shareWhatsApp">
+                                <i class="bi bi-whatsapp"></i> Share
+                            </button>
+                            <button class="btn btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#eveningPlannerModal">
+                                <i class="bi bi-moon-stars"></i> Evening Planner
+                            </button>
+                            <button class="btn btn-info text-white" data-bs-toggle="modal"
+                                data-bs-target="#eveningReflectModal">
+                                <i class="bi bi-journal-text"></i> Evening Reflect
+                            </button>
                         </div>
                     </div>
                 </div>
-            );
-        };
+            </div>
+        </div>
+    </div>
 
-        ReactDOM.render(<ActivityLogApp />, document.getElementById('root'));
+    <!-- Evening Planner Modal -->
+    <div class="modal fade" id="eveningPlannerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered evening-planner-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">30-Minute Evening Planning</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="eveningPlannerForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" name="date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Journaling (0-10 minutes)</label>
+                            <textarea class="form-control" name="journaling" rows="4"
+                                placeholder="Reflect on what you've done today..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tomorrow's Tasks (10-20 minutes)</label>
+                            <textarea class="form-control" name="tomorrowTasks" rows="4"
+                                placeholder="List your tasks and activities for tomorrow..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Prepare Outfit (20-25 minutes)</label>
+                            <input type="text" class="form-control" name="outfit"
+                                placeholder="Describe your outfit for tomorrow...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Visualize Your Day (25-30 minutes)</label>
+                            <textarea class="form-control" name="visualization" rows="4"
+                                placeholder="Visualize and describe how you want your day to unfold..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Evening Plan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evening Reflect Modal -->
+    <div class="modal fade" id="eveningReflectModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Evening Reflections</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="reflectionList"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // Initialize data from localStorage
+        let activities = JSON.parse(localStorage.getItem('activities')) || [];
+        let eveningPlans = JSON.parse(localStorage.getItem('eveningPlans')) || [];
+        let editingActivityId = null;
+
+        // DOM Elements
+        const activityForm = document.getElementById('activityForm');
+        const activityList = document.getElementById('activityList');
+        const filterDate = document.getElementById('filterDate');
+        const totalActivities = document.getElementById('totalActivities');
+        const activityLogTitle = document.getElementById('activityLogTitle');
+        const formTitle = document.getElementById('formTitle');
+        const submitButtonText = document.getElementById('submitButtonText');
+        const eveningPlannerForm = document.getElementById('eveningPlannerForm');
+        const eveningPlannerModal = new bootstrap.Modal(document.getElementById('eveningPlannerModal'));
+        const eveningReflectModal = new bootstrap.Modal(document.getElementById('eveningReflectModal'));
+
+        // Render Activities
+        function renderActivities() {
+            const filteredActivities = filterDate.value
+                ? activities.filter(activity => activity.date === filterDate.value)
+                : activities;
+
+            activityList.innerHTML = filteredActivities.length === 0
+                ? '<div class="text-center text-muted">No activities found</div>'
+                : '';
+
+            filteredActivities.forEach(activity => {
+                const activityCard = document.createElement('div');
+                activityCard.className = `card activity-card ${getStatusClass(activity.status)}`;
+                activityCard.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">${activity.description}</h5>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Time:</strong> ${activity.time}</p>
+                                <p class="mb-1"><strong>Date:</strong> ${new Date(activity.date).toLocaleDateString()}</p>
+                                <p class="mb-1"><strong>Duration:</strong> ${activity.duration || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Status:</strong> ${activity.status}</p>
+                                <p class="mb-1"><strong>Notes:</strong> ${activity.notes || 'None'}</p>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-sm btn-warning edit-btn" data-id="${activity.id}">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-btn" data-id="${activity.id}">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+                activityList.appendChild(activityCard);
+            });
+
+            totalActivities.textContent = `Total Activities: ${filteredActivities.length}`;
+            activityLogTitle.textContent = filterDate.value
+                ? `Activities on ${new Date(filterDate.value).toLocaleDateString()}`
+                : 'Activity Log';
+        }
+
+        // Get Status Class
+        function getStatusClass(status) {
+            switch (status) {
+                case 'Completed': return 'status-completed';
+                case 'In Progress': return 'status-progress';
+                case 'Pending': return 'status-pending';
+                default: return '';
+            }
+        }
+
+        // Handle Activity Form Submit
+        activityForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(activityForm);
+            const activity = Object.fromEntries(formData.entries());
+            activity.id = editingActivityId || Date.now().toString();
+
+            if (editingActivityId) {
+                const index = activities.findIndex(a => a.id === editingActivityId);
+                activities[index] = activity;
+                editingActivityId = null;
+            } else {
+                activities.unshift(activity);
+            }
+
+            localStorage.setItem('activities', JSON.stringify(activities));
+            activityForm.reset();
+            renderActivities();
+            updateFormState();
+        });
+
+        // Update Form State
+        function updateFormState() {
+            formTitle.textContent = editingActivityId ? 'Edit Activity' : 'Add New Activity';
+            submitButtonText.textContent = editingActivityId ? 'Update Activity' : 'Add Activity';
+            const submitIcon = activityForm.querySelector('button[type="submit"] i');
+            submitIcon.className = editingActivityId ? 'bi bi-pencil me-2' : 'bi bi-plus-circle me-2';
+        }
+
+        // Handle Activity List Click Events
+        activityList.addEventListener('click', function (e) {
+            const target = e.target.closest('.btn');
+            if (!target) return;
+
+            const id = target.dataset.id;
+            if (target.classList.contains('edit-btn')) {
+                const activity = activities.find(a => a.id === id);
+                if (activity) {
+                    editingActivityId = id;
+                    Object.keys(activity).forEach(key => {
+                        const field = activityForm.elements[key];
+                        if (field) field.value = activity[key];
+                    });
+                    updateFormState();
+                }
+            } else if (target.classList.contains('delete-btn')) {
+                if (confirm('Are you sure you want to delete this activity?')) {
+                    activities = activities.filter(a => a.id !== id);
+                    localStorage.setItem('activities', JSON.stringify(activities));
+                    renderActivities();
+                }
+            }
+        });
+
+        // Handle Evening Planner Form Submit
+        eveningPlannerForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(eveningPlannerForm);
+            const planningData = Object.fromEntries(formData.entries());
+            planningData.id = Date.now().toString();
+            eveningPlans.push(planningData);
+            localStorage.setItem('eveningPlans', JSON.stringify(eveningPlans));
+            eveningPlannerModal.hide();
+            eveningPlannerForm.reset();
+            renderEveningReflections();
+        });
+
+        // Render Evening Reflections
+        function renderEveningReflections() {
+            const reflectionList = document.getElementById('reflectionList');
+            const filteredReflections = filterDate.value
+                ? eveningPlans.filter(plan => plan.date === filterDate.value)
+                : eveningPlans;
+
+            reflectionList.innerHTML = filteredReflections.length === 0
+                ? '<div class="text-center text-muted">No evening reflections found</div>'
+                : '';
+
+            filteredReflections.forEach(plan => {
+                const reflectionCard = document.createElement('div');
+                reflectionCard.className = 'reflection-card';
+                reflectionCard.innerHTML = `
+                    <h5>Evening Reflection for ${new Date(plan.date).toLocaleDateString()}</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <p><strong>Journaling:</strong><br>${plan.journaling}</p>
+                            <p><strong>Tomorrow's Tasks:</strong><br>${plan.tomorrowTasks}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Outfit:</strong><br>${plan.outfit}</p>
+                            <p><strong>Visualization:</strong><br>${plan.visualization}</p>
+                        </div>
+                    </div>
+                `;
+                reflectionList.appendChild(reflectionCard);
+            });
+        }
+
+        // Handle Date Filter Change
+        filterDate.addEventListener('change', function () {
+            renderActivities();
+            renderEveningReflections();
+        });
+
+        // Handle PDF Download
+        document.getElementById('downloadPDF').addEventListener('click', function () {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(18);
+            doc.text("Daily Activity Log", 14, 22);
+
+            const filteredActivities = filterDate.value
+                ? activities.filter(activity => activity.date === filterDate.value)
+                : activities;
+
+            const tableColumn = ["Time", "Description", "Duration", "Status", "Notes"];
+            const tableRows = filteredActivities.map(activity => [
+                activity.time,
+                activity.description,
+                activity.duration || "N/A",
+                activity.status,
+                activity.notes || "N/A",
+            ]);
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 30,
+                styles: { fontSize: 12, cellPadding: 3 },
+                columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 50 } }
+            });
+
+            doc.save("activity_log.pdf");
+        });
+
+        // Handle WhatsApp Share
+        document.getElementById('shareWhatsApp').addEventListener('click', function () {
+            const filteredActivities = filterDate.value
+                ? activities.filter(activity => activity.date === filterDate.value)
+                : activities;
+
+            const message = filteredActivities.map(activity =>
+                `${activity.time} - ${activity.description} (${activity.status})`
+            ).join('\n');
+
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        });
+
+        // Initial render
+        renderActivities();
+        renderEveningReflections();
     </script>
 </body>
 
