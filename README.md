@@ -1,4 +1,6 @@
 
+Activity-logger is a simple web application that allows users to log their daily activities. It provides features to add, edit, delete, filter, and export the activity log to a PDF document.
+
 ```markdown
 # 🚀 Activity Logger Pro
 
