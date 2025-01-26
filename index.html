@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activity Logger</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -18,6 +17,7 @@
             transition: all 0.3s ease;
             border-radius: 8px;
             margin-bottom: 1rem;
+            cursor: pointer;
         }
 
         .activity-card:hover {
@@ -37,13 +37,6 @@
             border-left: 4px solid #dc3545;
         }
 
-        /* Modal Styles */
-        .modal-dialog-centered {
-            display: flex;
-            align-items: center;
-            min-height: calc(100% - 1rem);
-        }
-
         .evening-planner-modal {
             max-width: 500px;
             margin: 1.75rem auto;
@@ -55,7 +48,8 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        .evening-planner-modal .modal-header {
+        .evening-planner-modal .modal-header,
+        .evening-planner-modal .modal-footer {
             border-bottom: 1px solid #e9ecef;
             padding: 1.5rem;
         }
@@ -75,12 +69,6 @@
             min-height: 100px;
         }
 
-        .evening-planner-modal .modal-footer {
-            border-top: 1px solid #e9ecef;
-            padding: 1rem 1.5rem;
-        }
-
-        /* Reflection Card Styles */
         .reflection-card {
             background-color: #fff;
             border-radius: 8px;
@@ -99,21 +87,10 @@
             margin-bottom: 0.5rem;
         }
 
-        /* Button Styles */
         .btn {
             padding: 0.5rem 1rem;
             font-weight: 500;
             border-radius: 6px;
-        }
-
-        .btn-primary {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
-        }
-
-        .btn-primary:hover {
-            background-color: #0b5ed7;
-            border-color: #0a58ca;
         }
     </style>
 </head>
@@ -121,7 +98,6 @@
 <body>
     <div class="container-fluid py-4">
         <div class="row">
-            <!-- Activity Form Column -->
             <div class="col-md-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
@@ -165,8 +141,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Activity List Column -->
             <div class="col-md-8">
                 <div class="card shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
@@ -200,7 +174,6 @@
         </div>
     </div>
 
-    <!-- Evening Planner Modal -->
     <div class="modal fade" id="eveningPlannerModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered evening-planner-modal">
             <div class="modal-content">
@@ -244,7 +217,6 @@
         </div>
     </div>
 
-    <!-- Evening Reflect Modal -->
     <div class="modal fade" id="eveningReflectModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -262,18 +234,15 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js"></script>
 
     <script>
-        // Initialize data from localStorage
         let activities = JSON.parse(localStorage.getItem('activities')) || [];
         let eveningPlans = JSON.parse(localStorage.getItem('eveningPlans')) || [];
         let editingActivityId = null;
 
-        // DOM Elements
         const activityForm = document.getElementById('activityForm');
         const activityList = document.getElementById('activityList');
         const filterDate = document.getElementById('filterDate');
@@ -285,7 +254,6 @@
         const eveningPlannerModal = new bootstrap.Modal(document.getElementById('eveningPlannerModal'));
         const eveningReflectModal = new bootstrap.Modal(document.getElementById('eveningReflectModal'));
 
-        // Render Activities
         function renderActivities() {
             const filteredActivities = filterDate.value
                 ? activities.filter(activity => activity.date === filterDate.value)
@@ -298,6 +266,7 @@
             filteredActivities.forEach(activity => {
                 const activityCard = document.createElement('div');
                 activityCard.className = `card activity-card ${getStatusClass(activity.status)}`;
+                activityCard.dataset.id = activity.id;
                 activityCard.innerHTML = `
                     <div class="card-body">
                         <h5 class="card-title">${activity.description}</h5>
@@ -331,7 +300,6 @@
                 : 'Activity Log';
         }
 
-        // Get Status Class
         function getStatusClass(status) {
             switch (status) {
                 case 'Completed': return 'status-completed';
@@ -341,7 +309,6 @@
             }
         }
 
-        // Handle Activity Form Submit
         activityForm.addEventListener('submit', function (e) {
             e.preventDefault();
             const formData = new FormData(activityForm);
@@ -362,7 +329,6 @@
             updateFormState();
         });
 
-        // Update Form State
         function updateFormState() {
             formTitle.textContent = editingActivityId ? 'Edit Activity' : 'Add New Activity';
             submitButtonText.textContent = editingActivityId ? 'Update Activity' : 'Add Activity';
@@ -370,10 +336,16 @@
             submitIcon.className = editingActivityId ? 'bi bi-pencil me-2' : 'bi bi-plus-circle me-2';
         }
 
-        // Handle Activity List Click Events
         activityList.addEventListener('click', function (e) {
             const target = e.target.closest('.btn');
-            if (!target) return;
+            if (!target) {
+                const card = e.target.closest('.activity-card');
+                if (card) {
+                    const activityId = card.dataset.id;
+                    window.location.href = `activity-detail.html?id=${activityId}`;
+                }
+                return;
+            }
 
             const id = target.dataset.id;
             if (target.classList.contains('edit-btn')) {
@@ -395,7 +367,6 @@
             }
         });
 
-        // Handle Evening Planner Form Submit
         eveningPlannerForm.addEventListener('submit', function (e) {
             e.preventDefault();
             const formData = new FormData(eveningPlannerForm);
@@ -408,7 +379,6 @@
             renderEveningReflections();
         });
 
-        // Render Evening Reflections
         function renderEveningReflections() {
             const reflectionList = document.getElementById('reflectionList');
             const filteredReflections = filterDate.value
@@ -439,13 +409,11 @@
             });
         }
 
-        // Handle Date Filter Change
         filterDate.addEventListener('change', function () {
             renderActivities();
             renderEveningReflections();
         });
 
-        // Handle PDF Download
         document.getElementById('downloadPDF').addEventListener('click', function () {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -477,7 +445,6 @@
             doc.save("activity_log.pdf");
         });
 
-        // Handle WhatsApp Share
         document.getElementById('shareWhatsApp').addEventListener('click', function () {
             const filteredActivities = filterDate.value
                 ? activities.filter(activity => activity.date === filterDate.value)
@@ -491,7 +458,6 @@
             window.open(whatsappUrl, '_blank');
         });
 
-        // Initial render
         renderActivities();
         renderEveningReflections();
     </script>
