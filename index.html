@@ -8,94 +8,315 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #4a90e2;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --danger-color: #e74c3c;
+            --text-color: #2c3e50;
+            --bg-color: #f5f6fa;
+        }
+
         body {
-            background-color: #f8f9fa;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            height: calc(100vh - 2rem);
+            position: sticky;
+            top: 1rem;
         }
 
         .activity-card {
+            background: white;
+            border: none !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 1rem;
-            cursor: pointer;
         }
 
         .activity-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.1);
         }
 
-        .status-completed {
-            border-left: 4px solid #198754;
-        }
-
-        .status-progress {
-            border-left: 4px solid #ffc107;
-        }
-
-        .status-pending {
-            border-left: 4px solid #dc3545;
-        }
-
-        .evening-planner-modal {
-            max-width: 500px;
-            margin: 1.75rem auto;
-        }
-
-        .evening-planner-modal .modal-content {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        .evening-planner-modal .modal-header,
-        .evening-planner-modal .modal-footer {
-            border-bottom: 1px solid #e9ecef;
-            padding: 1.5rem;
-        }
-
-        .evening-planner-modal .modal-body {
-            padding: 1.5rem;
-        }
-
-        .evening-planner-modal .form-label {
+        .status-badge {
+            padding: 0.35em 0.65em;
+            border-radius: 20px;
+            font-size: 0.85em;
             font-weight: 500;
-            color: #495057;
-            margin-bottom: 0.5rem;
         }
 
-        .evening-planner-modal textarea {
-            resize: vertical;
-            min-height: 100px;
+        .status-completed { background-color: #d4edda; color: #155724; }
+        .status-progress { background-color: #fff3cd; color: #856404; }
+        .status-pending { background-color: #f8d7da; color: #721c24; }
+
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
 
-        .reflection-card {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            margin-bottom: 1rem;
+        .stat-card {
+            background: white;
+            border-radius: 12px;
             padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .reflection-card h5 {
-            color: #212529;
-            margin-bottom: 1rem;
-        }
-
-        .reflection-card p {
-            color: #6c757d;
+        .stat-card h3 {
+            font-size: 2rem;
             margin-bottom: 0.5rem;
+            color: var(--primary-color);
         }
 
-        .btn {
+        .btn-custom {
+            border-radius: 8px;
             padding: 0.5rem 1rem;
             font-weight: 500;
-            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            padding: 0.75rem 1rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.25);
+            border-color: var(--primary-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .filters-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .activity-meta {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .activity-actions {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .activity-card:hover .activity-actions {
+            opacity: 1;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            padding: 4rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') center/cover;
+            opacity: 0.1;
+        }
+
+        .hero-section .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-pill {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-pill i {
+            font-size: 1.2rem;
+        }
+
+        .stat-pill span {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            height: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--bg-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+
+        .feature-icon i {
+            font-size: 2rem;
+            color: var(--primary-color);
+        }
+
+        .feature-card h3 {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .feature-card p {
+            color: #6c757d;
+            margin-bottom: 0;
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-calendar-check"></i> Activity Tracker
+            </a>
+            <div class="d-flex gap-2">
+                <button class="btn btn-custom btn-outline-primary" data-bs-toggle="modal" data-bs-target="#helpModal">
+                    <i class="bi bi-question-circle"></i> Help
+                </button>
+                <button class="btn btn-custom btn-primary" onclick="document.getElementById('activityForm').scrollIntoView()">
+                    <i class="bi bi-plus-lg"></i> New Activity
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="hero-section text-center py-5 mb-4">
+        <div class="container">
+            <h1 class="display-4 mb-3">Track Your Daily Progress</h1>
+            <p class="lead mb-4">Stay organized, boost productivity, and achieve your goals with our intuitive activity tracker.</p>
+            <div class="hero-stats d-flex justify-content-center gap-4 mb-5">
+                <div class="stat-pill">
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <span id="completedCount">0</span> Completed
+                </div>
+                <div class="stat-pill">
+                    <i class="bi bi-clock-fill text-warning"></i>
+                    <span id="inProgressCount">0</span> In Progress
+                </div>
+                <div class="stat-pill">
+                    <i class="bi bi-hourglass-split text-danger"></i>
+                    <span id="pendingCount">0</span> Pending
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-section py-5 bg-light mb-4">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <h3>Daily Planning</h3>
+                        <p>Organize your day with our intuitive activity planner. Set times, durations, and track progress.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h3>Progress Tracking</h3>
+                        <p>Monitor your productivity with visual progress indicators and detailed activity logs.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-moon-stars"></i>
+                        </div>
+                        <h3>Evening Reflection</h3>
+                        <p>End your day with structured reflection and prepare for tomorrow's success.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container-fluid py-4">
         <div class="row">
             <div class="col-md-4">
@@ -234,13 +455,43 @@
         </div>
     </div>
 
+    <div class="modal fade" id="helpModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">How to Use Activity Tracker</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6><i class="bi bi-1-circle"></i> Add Activities</h6>
+                        <p>Use the form on the left to add new activities. Fill in the details and click "Add Activity".</p>
+                    </div>
+                    <div class="mb-4">
+                        <h6><i class="bi bi-2-circle"></i> Track Progress</h6>
+                        <p>Update activity status as you progress. Click on any activity to view more details.</p>
+                    </div>
+                    <div class="mb-4">
+                        <h6><i class="bi bi-3-circle"></i> Evening Planning</h6>
+                        <p>Use the Evening Planner to prepare for tomorrow and reflect on your day.</p>
+                    </div>
+                    <div>
+                        <h6><i class="bi bi-4-circle"></i> Analysis</h6>
+                        <p>View your activity statistics and download reports to track your productivity.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js"></script>
 
     <script>
-        let activities = JSON.parse(localStorage.getItem('activities')) || [];
-        let eveningPlans = JSON.parse(localStorage.getItem('eveningPlans')) || [];
+        const API_BASE_URL = 'http://localhost:3000';
+        let activities = [];
+        let eveningPlans = [];
         let editingActivityId = null;
 
         const activityForm = document.getElementById('activityForm');
@@ -253,6 +504,76 @@
         const eveningPlannerForm = document.getElementById('eveningPlannerForm');
         const eveningPlannerModal = new bootstrap.Modal(document.getElementById('eveningPlannerModal'));
         const eveningReflectModal = new bootstrap.Modal(document.getElementById('eveningReflectModal'));
+
+        async function fetchActivities(date = null) {
+            try {
+                const url = date ? 
+                    `${API_BASE_URL}/api/activities?date=${date}` : 
+                    `${API_BASE_URL}/api/activities`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                activities = await response.json();
+                renderActivities();
+                updateStats(activities);
+            } catch (error) {
+                console.error('Error fetching activities:', error);
+                alert('Failed to fetch activities. Please check the console for details.');
+            }
+        }
+
+        async function saveActivity(activity) {
+            try {
+                const method = editingActivityId ? 'PUT' : 'POST';
+                const url = editingActivityId 
+                    ? `${API_BASE_URL}/api/activities/${editingActivityId}`
+                    : `${API_BASE_URL}/api/activities`;
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(activity)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Error saving activity:', error);
+                alert('Failed to save activity. Please check the console for details.');
+                throw error;
+            }
+        }
+
+        async function deleteActivity(id) {
+            await fetch(`${API_BASE_URL}/api/activities/${id}`, {
+                method: 'DELETE'
+            });
+        }
+
+        async function fetchEveningPlans(date = null) {
+            const url = date ? 
+                `${API_BASE_URL}/api/evening-plans?date=${date}` : 
+                `${API_BASE_URL}/api/evening-plans`;
+            const response = await fetch(url);
+            eveningPlans = await response.json();
+            renderEveningReflections();
+        }
+
+        async function saveEveningPlan(plan) {
+            await fetch(`${API_BASE_URL}/api/evening-plans`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(plan)
+            });
+        }
 
         function renderActivities() {
             const filteredActivities = filterDate.value
@@ -309,24 +630,21 @@
             }
         }
 
-        activityForm.addEventListener('submit', function (e) {
+        activityForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            const formData = new FormData(activityForm);
-            const activity = Object.fromEntries(formData.entries());
-            activity.id = editingActivityId || Date.now().toString();
+            try {
+                const formData = new FormData(activityForm);
+                const activity = Object.fromEntries(formData.entries());
+                activity.id = editingActivityId || Date.now().toString();
 
-            if (editingActivityId) {
-                const index = activities.findIndex(a => a.id === editingActivityId);
-                activities[index] = activity;
+                await saveActivity(activity);
                 editingActivityId = null;
-            } else {
-                activities.unshift(activity);
+                activityForm.reset();
+                await fetchActivities(filterDate.value);
+                updateFormState();
+            } catch (error) {
+                console.error('Error in form submission:', error);
             }
-
-            localStorage.setItem('activities', JSON.stringify(activities));
-            activityForm.reset();
-            renderActivities();
-            updateFormState();
         });
 
         function updateFormState() {
@@ -336,7 +654,7 @@
             submitIcon.className = editingActivityId ? 'bi bi-pencil me-2' : 'bi bi-plus-circle me-2';
         }
 
-        activityList.addEventListener('click', function (e) {
+        activityList.addEventListener('click', async function (e) {
             const target = e.target.closest('.btn');
             if (!target) {
                 const card = e.target.closest('.activity-card');
@@ -360,23 +678,22 @@
                 }
             } else if (target.classList.contains('delete-btn')) {
                 if (confirm('Are you sure you want to delete this activity?')) {
-                    activities = activities.filter(a => a.id !== id);
-                    localStorage.setItem('activities', JSON.stringify(activities));
-                    renderActivities();
+                    await deleteActivity(id);
+                    await fetchActivities(filterDate.value);
                 }
             }
         });
 
-        eveningPlannerForm.addEventListener('submit', function (e) {
+        eveningPlannerForm.addEventListener('submit', async function (e) {
             e.preventDefault();
             const formData = new FormData(eveningPlannerForm);
             const planningData = Object.fromEntries(formData.entries());
             planningData.id = Date.now().toString();
-            eveningPlans.push(planningData);
-            localStorage.setItem('eveningPlans', JSON.stringify(eveningPlans));
+            
+            await saveEveningPlan(planningData);
             eveningPlannerModal.hide();
             eveningPlannerForm.reset();
-            renderEveningReflections();
+            await fetchEveningPlans(filterDate.value);
         });
 
         function renderEveningReflections() {
@@ -409,9 +726,9 @@
             });
         }
 
-        filterDate.addEventListener('change', function () {
-            renderActivities();
-            renderEveningReflections();
+        filterDate.addEventListener('change', async function () {
+            await fetchActivities(filterDate.value);
+            await fetchEveningPlans(filterDate.value);
         });
 
         document.getElementById('downloadPDF').addEventListener('click', function () {
@@ -458,8 +775,20 @@
             window.open(whatsappUrl, '_blank');
         });
 
-        renderActivities();
-        renderEveningReflections();
+        function updateStats(activities) {
+            const stats = activities.reduce((acc, activity) => {
+                const status = activity.status.toLowerCase().replace(' ', '');
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
+
+            document.getElementById('completedCount').textContent = stats.completed || 0;
+            document.getElementById('inProgressCount').textContent = stats.inprogress || 0;
+            document.getElementById('pendingCount').textContent = stats.pending || 0;
+        }
+
+        fetchActivities();
+        fetchEveningPlans();
     </script>
 </body>
 
