@@ -1,163 +1,167 @@
+const express = require('express');
+const serverless = require('serverless-http');
 const sqlite3 = require('sqlite3').verbose();
+const cors = require('cors');
 const path = require('path');
+
+const app = express();
+
+// CORS configuration
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type']
+}));
+
+app.use(express.json());
 
 // Initialize SQLite database
 const dbPath = path.join(__dirname, 'activities.db');
 const db = new sqlite3.Database(dbPath);
 
-// Create tables if they don't exist
+// Create tables
 db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS activities (
-    id TEXT PRIMARY KEY,
-    time TEXT,
-    date TEXT,
-    description TEXT,
-    duration TEXT,
-    status TEXT,
-    notes TEXT,
-    additionalDetails TEXT
-  )`);
+    db.run(`CREATE TABLE IF NOT EXISTS activities (
+        id TEXT PRIMARY KEY,
+        time TEXT,
+        date TEXT,
+        description TEXT,
+        duration TEXT,
+        status TEXT,
+        notes TEXT,
+        additionalDetails TEXT
+    )`);
 
-  db.run(`CREATE TABLE IF NOT EXISTS evening_plans (
-    id TEXT PRIMARY KEY,
-    date TEXT,
-    journaling TEXT,
-    tomorrowTasks TEXT,
-    outfit TEXT,
-    visualization TEXT
-  )`);
+    db.run(`CREATE TABLE IF NOT EXISTS evening_plans (
+        id TEXT PRIMARY KEY,
+        date TEXT,
+        journaling TEXT,
+        tomorrowTasks TEXT,
+        outfit TEXT,
+        visualization TEXT
+    )`);
 });
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
-  };
+// API Routes
+app.get('/activities', async (req, res) => {
+    const date = req.query.date;
+    let query = 'SELECT * FROM activities';
+    let params = [];
 
-  // Handle CORS preflight requests
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
-  }
-
-  const path = event.path.replace('/.netlify/functions/api', '');
-  const segments = path.split('/').filter(Boolean);
-  const resource = segments[0]; // 'activities' or 'evening-plans'
-  const id = segments[1];
-
-  try {
-    switch (event.httpMethod) {
-      case 'GET':
-        if (resource === 'activities') {
-          return new Promise((resolve, reject) => {
-            const query = id 
-              ? 'SELECT * FROM activities WHERE id = ?'
-              : 'SELECT * FROM activities ORDER BY time DESC';
-            const params = id ? [id] : [];
-
-            db.all(query, params, (err, rows) => {
-              if (err) reject(err);
-              resolve({
-                statusCode: 200,
-                headers,
-                body: JSON.stringify(id ? rows[0] : rows)
-              });
-            });
-          });
-        }
-        break;
-
-      case 'POST':
-        if (resource === 'activities') {
-          const activity = JSON.parse(event.body);
-          return new Promise((resolve, reject) => {
-            const query = `INSERT INTO activities 
-              (id, time, date, description, duration, status, notes, additionalDetails)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-            const params = [
-              activity.id,
-              activity.time,
-              activity.date,
-              activity.description,
-              activity.duration || '',
-              activity.status || 'Pending',
-              activity.notes || '',
-              activity.additionalDetails || ''
-            ];
-
-            db.run(query, params, function(err) {
-              if (err) reject(err);
-              resolve({
-                statusCode: 201,
-                headers,
-                body: JSON.stringify({ id: activity.id, success: true })
-              });
-            });
-          });
-        }
-        break;
-
-      case 'PUT':
-        if (resource === 'activities' && id) {
-          const updates = JSON.parse(event.body);
-          return new Promise((resolve, reject) => {
-            const query = `UPDATE activities 
-              SET time=?, date=?, description=?, duration=?, status=?, notes=?, additionalDetails=?
-              WHERE id=?`;
-            const params = [
-              updates.time,
-              updates.date,
-              updates.description,
-              updates.duration,
-              updates.status,
-              updates.notes,
-              updates.additionalDetails,
-              id
-            ];
-
-            db.run(query, params, function(err) {
-              if (err) reject(err);
-              resolve({
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({ success: true })
-              });
-            });
-          });
-        }
-        break;
-
-      case 'DELETE':
-        if (resource === 'activities' && id) {
-          return new Promise((resolve, reject) => {
-            db.run('DELETE FROM activities WHERE id = ?', [id], function(err) {
-              if (err) reject(err);
-              resolve({
-                statusCode: 200,
-                headers,
-                body: JSON.stringify({ success: true })
-              });
-            });
-          });
-        }
-        break;
+    if (date) {
+        query += ' WHERE date = ?';
+        params = [date];
     }
+    query += ' ORDER BY time DESC';
 
-    return {
-      statusCode: 404,
-      headers,
-      body: JSON.stringify({ error: 'Not Found' })
-    };
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
 
-  } catch (error) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: error.message })
-    };
-  }
-}; 
+app.get('/activities/:id', (req, res) => {
+    const id = req.params.id;
+    db.get('SELECT * FROM activities WHERE id = ?', [id], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (!row) {
+            res.status(404).json({ error: 'Activity not found' });
+            return;
+        }
+        res.json(row);
+    });
+});
+
+app.post('/activities', (req, res) => {
+    const activity = req.body;
+    const params = [
+        activity.id,
+        activity.time,
+        activity.date,
+        activity.description,
+        activity.duration || '',
+        activity.status || 'Pending',
+        activity.notes || '',
+        activity.additionalDetails || ''
+    ];
+
+    db.run(`INSERT INTO activities VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, params, function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({ id: activity.id, success: true });
+    });
+});
+
+app.put('/activities/:id', (req, res) => {
+    const updates = req.body;
+    const params = [
+        updates.time,
+        updates.date,
+        updates.description,
+        updates.duration,
+        updates.status,
+        updates.notes,
+        updates.additionalDetails,
+        req.params.id
+    ];
+
+    db.run(`UPDATE activities SET time=?, date=?, description=?, duration=?, status=?, notes=?, additionalDetails=? WHERE id=?`,
+        params, function(err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json({ success: true });
+        });
+});
+
+app.delete('/activities/:id', (req, res) => {
+    db.run('DELETE FROM activities WHERE id = ?', [req.params.id], function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({ success: true });
+    });
+});
+
+// Evening plans routes
+app.get('/evening-plans', (req, res) => {
+    const date = req.query.date;
+    let query = 'SELECT * FROM evening_plans';
+    const params = date ? [date] : [];
+    
+    if (date) query += ' WHERE date = ?';
+    
+    db.all(query, params, (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
+
+app.post('/evening-plans', (req, res) => {
+    const plan = req.body;
+    const params = [plan.id, plan.date, plan.journaling, plan.tomorrowTasks, plan.outfit, plan.visualization];
+
+    db.run(`INSERT INTO evening_plans VALUES (?, ?, ?, ?, ?, ?)`, params, function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({ id: plan.id });
+    });
+});
+
+// Export the express app wrapped in serverless
+exports.handler = serverless(app); 

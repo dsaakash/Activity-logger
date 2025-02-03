@@ -4,8 +4,10 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors({
-    origin: ['http://127.0.0.1:5500', 'http://localhost:5500'],
+    origin: ['http://127.0.0.1:5500', 'http://localhost:5500', process.env.FRONTEND_URL],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type']
 }));
@@ -198,7 +200,6 @@ app.get('/api/activities/:id', (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 }); 
