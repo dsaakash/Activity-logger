@@ -1,0 +1,13 @@
+[build]
+  command = "npm install"
+  publish = "."
+  functions = "functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[functions]
+  external_node_modules = ["sqlite3"]
+  included_files = ["*.db"] 
