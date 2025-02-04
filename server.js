@@ -14,14 +14,29 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '.')));
 
-// Initialize SQLite database
-const db = new sqlite3.Database('activities.db', (err) => {
-    if (err) {
-        console.error('Error opening database:', err);
-    } else {
-        console.log('Connected to SQLite database');
-        createTables();
+// Initialize PostgreSQL database
+const { Pool } = require('pg');
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
     }
+});
+
+pool.on('error', (err) => {
+    console.error('Database connection error:', err);
+});
+
+// Connect to the database
+pool.connect((err, client, release) => {
+    if (err) {
+        console.error('Connection error:', err.stack);
+        return;
+    }
+    console.log('Connected to PostgreSQL database');
+    createTables();
+    release();
 });
 
 // Create necessary tables
