@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-    origin: ['http://127.0.0.1:5500', 'http://localhost:5500', process.env.FRONTEND_URL],
+    origin: ['https://activity-logger-x2rv.onrender.com', 'https://activity-logger-x2rv.onrender.com', 'https://activity-logger-x2rv.onrender.com'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type']
 }));
